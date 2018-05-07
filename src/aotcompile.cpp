@@ -20,6 +20,9 @@
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Transforms/Vectorize.h>
+#if defined(JL_ASAN_ENABLED)
+#include <llvm/Transforms/Instrumentation.h>
+#endif
 #include <llvm/Transforms/Scalar/GVN.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
 #if JL_LLVM_VERSION >= 70000
