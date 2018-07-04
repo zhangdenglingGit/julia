@@ -694,3 +694,7 @@ end
     a = rand(Int, 1)
     @test shuffle(a) == a
 end
+
+@testset "RANDOM_DEVICE" begin
+    @test rand(Random.RANDOM_DEVICE) isa Float64
+end
