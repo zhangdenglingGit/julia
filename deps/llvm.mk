@@ -526,6 +526,7 @@ $(eval $(call staged-install,llvm,llvm-$$(LLVM_VER)-$$(LLVM_BB_REL),,,,))
 
 #Override provision of stage tarball
 $(build_staging)/llvm-$(LLVM_VER)-$(LLVM_BB_REL).tgz: $(BUILDDIR)/llvm-$(LLVM_VER)-$(LLVM_BB_REL)/LLVM.$(BINARYBUILDER_TRIPLET).tar.gz
+	mkdir -p $(build_staging)
 	cp $< $@
 
 clean-llvm:
