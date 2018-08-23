@@ -102,9 +102,7 @@ before_install:
     - wget http://http.debian.net/debian/pool/main/m/moreutils/moreutils_0.62.orig.tar.xz
     - tar -xJvf moreutils_0.62.orig.tar.xz && mv moreutils-0.62 moreutils
 script:
-    - echo BUILDOPTS=$BUILDOPTS
-    - export BUILDOPTS
-    - contrib/travis.sh
+    - BUILDOPTS="$BUILDOPTS" contrib/travis.sh
 # uncomment the following if failures are suspected to be due to the out-of-memory killer
 #    - dmesg
 after_success:
