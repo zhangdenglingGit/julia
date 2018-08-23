@@ -1,7 +1,7 @@
 #!/bin/bash
 # This file is a part of Julia. License is MIT: https://julialang.org/license
 echo BUILDOPTS=$BUILDOPTS
-if [ $GC_ANALYZE = 0 ]; then
+if [ ! -z ${GC_ANALYZE+x} ] || [ $GC_ANALYZE = 0 ]; then
     contrib/download_cmake.sh;
     make -C moreutils mispipe;
     make $BUILDOPTS -C base version_git.jl.phony;
