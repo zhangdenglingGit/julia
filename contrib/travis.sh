@@ -51,6 +51,6 @@ if [ $GC_ANALYZE = 0 ]; then
     if [ `uname` = "Linux" ] && [ $ARCH = "x86_64" ]; then
         pushd julia && make -C doc doctest=true && popd; fi;
 else
-    make -C deps install-llvm;
-    make -C src analyzegc;
+    make $BUILDOPTS -C deps install-llvm;
+    make $BUILDOPTS -C src analyzegc;
 fi;
