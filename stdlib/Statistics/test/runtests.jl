@@ -682,3 +682,5 @@ end
         @test isfinite.(cov_sparse) == isfinite.(cov_dense)
     end
 end
+
+include("weights.jl")
