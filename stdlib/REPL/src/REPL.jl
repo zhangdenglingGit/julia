@@ -128,7 +128,11 @@ end
 function display(d::REPLDisplay, mime::MIME"text/plain", x)
     io = outstream(d.repl)
     get(io, :color, false) && write(io, answer_color(d.repl))
-    show(IOContext(io, :limit => true), mime, x)
+    if isdefined(d.repl, :iocontext)
+        # this can override the :limit property set initially
+        io = foldl(IOContext, d.repl.iocontext, init=IOContext(io, :limit => true))
+    end
+    show(io, mime, x)
     println(io)
     nothing
 end
@@ -314,12 +318,14 @@ mutable struct LineEditREPL <: AbstractREPL
     waserror::Bool
     specialdisplay::Union{Nothing,AbstractDisplay}
     options::Options
+    # default IOContext settings at the REPL
+    iocontext::Dict{Symbol,Any}
     mistate::Union{MIState,Nothing}
     interface::ModalInterface
     backendref::REPLBackendRef
     LineEditREPL(t,hascolor,prompt_color,input_color,answer_color,shell_color,help_color,history_file,in_shell,in_help,envcolors) =
         new(t,true,prompt_color,input_color,answer_color,shell_color,help_color,history_file,in_shell,
-            in_help,envcolors,false,nothing, Options(), nothing)
+            in_help,envcolors,false,nothing, Options(), Dict{Symbol,Any}(), nothing)
 end
 outstream(r::LineEditREPL) = r.t
 specialdisplay(r::LineEditREPL) = r.specialdisplay
