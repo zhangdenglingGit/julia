@@ -72,6 +72,18 @@ static void jl_swap_fiber(jl_ucontext_t *lastt, jl_ucontext_t *t);
 static JL_THREAD unw_cursor_t jl_basecursor;
 #endif
 
+#ifdef JL_ASAN_ENABLED
+void sanitizer_start_switch_fiber(jl_task_t *task) {
+    __sanitizer_start_switch_fiber(&task->fakestack, task->stkbuf, task->bufsz);
+}
+void sanitizer_finish_switch_fiber(jl_task_t *task) {
+    __sanitizer_finish_switch_fiber(task->fakestack, NULL, NULL);
+}
+#else
+#define sanitizer_start_switch_fiber(task)
+#define sanitizer_finish_switch_fiber(task)
+#endif
+
 #ifdef COPY_STACKS
 
 static void memcpy_a16(uint64_t *to, uint64_t *from, size_t nb)
@@ -121,6 +133,7 @@ static void NOINLINE JL_NORETURN restore_stack(jl_ptls_t ptls, char *p)
     }
     assert(t->stkbuf != NULL);
     memcpy_a16((uint64_t*)_x, (uint64_t*)t->stkbuf, nb); // destroys all but the current stackframe
+    sanitizer_start_switch_fiber(t);
     jl_set_fiber(&t->ctx);
     abort(); // unreachable
 }
@@ -131,7 +144,9 @@ static void restore_stack2(jl_ptls_t ptls, jl_task_t *lastt)
     char *_x = (char*)ptls->stackbase - nb;
     assert(t->stkbuf != NULL);
     memcpy_a16((uint64_t*)_x, (uint64_t*)t->stkbuf, nb); // destroys all but the current stackframe
+    sanitizer_start_switch_fiber(lastt);
     jl_swap_fiber(&lastt->ctx, &t->ctx);
+    sanitizer_finish_switch_fiber(ptls->current_task);
 }
 #endif
 
@@ -235,6 +250,7 @@ static void ctx_switch(jl_ptls_t ptls, jl_task_t **pt)
         if (lastt->copy_stack) { // save the old copy-stack
             save_stack(ptls, lastt, pt); // allocates (gc-safepoint, and can also fail)
             if (jl_setjmp(lastt->ctx.uc_mcontext, 0)) {
+                sanitizer_finish_switch_fiber(ptls->current_task);
 #ifdef ENABLE_TIMINGS
                 assert(blk == ptls->current_task->timing_stack);
                 if (blk)
@@ -285,12 +301,18 @@ static void ctx_switch(jl_ptls_t ptls, jl_task_t **pt)
         }
         else
 #endif
-        if (!lastt_ctx)
+        if (!lastt_ctx) {
+            sanitizer_start_switch_fiber(t);
             jl_set_fiber(&t->ctx);
-        else
+        }
+        else {
+            sanitizer_start_switch_fiber(t);
             jl_swap_fiber(lastt_ctx, &t->ctx);
+            sanitizer_finish_switch_fiber(ptls->current_task);
+        }
     }
     else {
+        sanitizer_start_switch_fiber(t);
         jl_start_fiber(lastt_ctx, &t->ctx);
     }
 #ifdef ENABLE_TIMINGS
@@ -568,8 +590,11 @@ static void jl_init_basefiber(size_t ssize)
 static void start_basefiber(void)
 {
     jl_ptls_t ptls = jl_get_ptls_states();
-    if (jl_setjmp(ptls->base_ctx.uc_mcontext, 0))
+    if (jl_setjmp(ptls->base_ctx.uc_mcontext, 0)) {
+        sanitizer_finish_switch_fiber(ptls->current_task);
         start_task();
+    }
+    sanitizer_start_switch_fiber(jl_root_task);
     jl_longjmp(jl_root_task->ctx.uc_mcontext, 1);
 }
 #if defined(_CPU_X86_) || defined(_CPU_X86_64_)
@@ -607,8 +632,9 @@ static char *jl_alloc_fiber(unw_context_t *t, size_t *ssize, jl_task_t *owner)
 }
 static void jl_start_fiber(unw_context_t *lastt, unw_context_t *t)
 {
-    if (lastt && jl_setjmp(lastt->uc_mcontext, 0))
+    if (lastt && jl_setjmp(lastt->uc_mcontext, 0)) {
         return;
+    }
     unw_resume(&jl_basecursor); // (doesn't return)
 }
 static void jl_swap_fiber(unw_context_t *lastt, unw_context_t *t)
