@@ -64,12 +64,14 @@ function mul!(C::StridedVecOrMat, adjA::Adjoint{<:Any,<:SparseMatrixCSC}, B::Str
         β != 0 ? rmul!(C, β) : fill!(C, zero(eltype(C)))
     end
     for k = 1:size(C, 2)
-        @inbounds for col = 1:A.n
-            tmp = zero(eltype(C))
-            for j = A.colptr[col]:(A.colptr[col + 1] - 1)
-                tmp += adjoint(nzv[j])*B[rv[j],k]
+        Threads.@threads for col = 1:A.n
+            @inbounds begin
+                tmp = zero(eltype(C))
+                for j = A.colptr[col]:(A.colptr[col + 1] - 1)
+                    tmp += adjoint(A.nzval[j])*B[A.rowval[j],k]
+                end
+                C[col,k] += α*tmp
             end
-            C[col,k] += α*tmp
         end
     end
     C
