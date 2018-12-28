@@ -13,6 +13,8 @@ include $(JULIAHOME)/Make.inc
 include $(SRCDIR)/tools/common.mk
 include $(SRCDIR)/tools/git-external.mk
 
+BUILDDIR := $(BUILDDIR)$(MAYBE_HOST)
+
 # Special comments:
 #
 # all targets in here should follow the same structure,
