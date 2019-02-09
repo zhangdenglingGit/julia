@@ -1462,3 +1462,6 @@ end
 # issue #30927
 Z = Array{Float64}(undef,0,0)
 @test eval(Meta.parse(repr(Z))) == Z
+
+Z = Float64[i for i = 1:3, j=1:1]
+@test eval(Meta.parse(repr(Z))) == Z
