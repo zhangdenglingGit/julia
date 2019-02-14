@@ -2648,11 +2648,7 @@ int jl_has_concrete_subtype(jl_value_t *typ)
     if (((jl_datatype_t*)typ)->name == jl_namedtuple_typename)
         return jl_has_concrete_subtype(jl_tparam1(typ));
     jl_svec_t *fields = ((jl_datatype_t*)typ)->types;
-    size_t i, l = jl_svec_len(fields);
-    if (l != ((jl_datatype_t*)typ)->ninitialized)
-        if (((jl_datatype_t*)typ)->name != jl_tuple_typename)
-            return 1;
-    for (i = 0; i < l; i++) {
+    for (size_t i = 0; i < ((jl_datatype_t*)typ)->ninitialized; i++) {
         jl_value_t *ft = jl_svecref(fields, i);
         if (!jl_has_concrete_subtype(ft))
             return 0;

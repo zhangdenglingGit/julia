@@ -6865,3 +6865,11 @@ let x = SplatNew{Tuple{Int16}}((1,))
     @test x.y === (Int16(1),)
 end
 @test_throws ArgumentError SplatNew{Int8}()
+
+# Issue #31062 - Accidental recursion in jl_has_concrete_subtype
+struct Bar
+    x::NTuple{N, Bar} where N
+end
+# Use eval to make sure that this actually gets executed and not
+# just constant folded by (future) over-eager compiler optimizations
+@test isa(Core.eval(@__MODULE__, :(Bar())), Bar)
