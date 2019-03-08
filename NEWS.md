@@ -55,6 +55,7 @@ Standard library changes
 * `one` for structured matrices (`Diagonal`, `Bidiagonal`, `Tridiagonal`, `Symtridiagonal`) now preserves
   structure and type. ([#29777])
 * `diagm(v)` is now a shorthand for `diagm(0 => v)`. ([#31125]).
+* `cholesky` and `cholesky!` now work for `Adjoint` and `Transpose` matrices ([#31302]).
 
 #### SparseArrays
 
