@@ -115,7 +115,9 @@ static inline void jl_assume_(int cond)
 static uv_loop_t *const unused_uv_loop_arg = (uv_loop_t *)0xBAD10;
 
 extern jl_mutex_t jl_uv_mutex;
-#define JL_UV_LOCK() JL_LOCK_NOGC(&jl_uv_mutex)
+extern int jl_uv_n_waiters;
+//#define JL_UV_LOCK() JL_LOCK_NOGC(&jl_uv_mutex)
+void JL_UV_LOCK(void);
 #define JL_UV_UNLOCK() JL_UNLOCK_NOGC(&jl_uv_mutex)
 
 #ifdef __cplusplus

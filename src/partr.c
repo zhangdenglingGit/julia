@@ -226,7 +226,10 @@ JL_DLLEXPORT void jl_wakeup_thread(int16_t tid)
         uv_cond_broadcast(&sleep_alarm); // TODO: make this uv_cond_signal / just wake up correct thread
         uv_mutex_unlock(&sleep_lock);
     }
-    uv_stop(jl_global_event_loop());
+    if (_threadedregion)
+        jl_wake_libuv();
+    else
+        uv_stop(jl_global_event_loop());
 }
 
 
@@ -289,8 +292,17 @@ JL_DLLEXPORT jl_task_t *jl_task_get_next(jl_value_t *getsticky)
             }
         }
         else {
-            // for now just have all threads poll during threaded regions
-            jl_process_events(jl_global_event_loop());
+            if (jl_atomic_load(&jl_uv_n_waiters) == 0 && jl_mutex_trylock_nogc(&jl_uv_mutex)) {
+                task = get_next_task(getsticky);
+                if (task) {
+                    JL_UV_UNLOCK();
+                    return task;
+                }
+                uv_loop_t *loop = jl_global_event_loop();
+                loop->stop_flag = 0;
+                uv_run(loop, UV_RUN_ONCE);
+                JL_UV_UNLOCK();
+            }
         }
     }
 }

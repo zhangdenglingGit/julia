@@ -889,15 +889,11 @@ end
 
 # helper function for uv_write that returns the uv_write_t struct for the write
 # rather than waiting on it
-function uv_write_async(s::LibuvStream, p::Ptr{UInt8}, n::UInt, reqdata = nothing)
+function uv_write_async(s::LibuvStream, p::Ptr{UInt8}, n::UInt, reqdata)
     check_open(s)
     while true
         uvw = Libc.malloc(_sizeof_uv_write)
-        if reqdata === nothing
-            uv_req_set_data(uvw, C_NULL) # in case we get interrupted before arriving at the wait call
-        else
-            uv_req_set_data(uvw, reqdata)
-        end
+        uv_req_set_data(uvw, reqdata)
         nwrite = min(n, MAX_OS_WRITE) # split up the write into chunks the OS can handle.
         # TODO: use writev, when that is added to uv-win
         err = ccall(:jl_uv_write,

@@ -307,7 +307,7 @@ end
         tc[] += 1
     end
     @test isopen(t)
-    Base.process_events(false)
+    Base.process_events()
     @test !isopen(t)
     @test tc[] == 0
     yield()
@@ -329,9 +329,9 @@ end
     end
     @test isopen(async)
     ccall(:uv_async_send, Cvoid, (Ptr{Cvoid},), async)
-    Base.process_events(false) # schedule event
+    Base.process_events() # schedule event
     ccall(:uv_async_send, Cvoid, (Ptr{Cvoid},), async)
-    Sys.iswindows() && Base.process_events(false) # schedule event (windows?)
+    Sys.iswindows() && Base.process_events() # schedule event (windows?)
     @test tc[] == 0
     yield() # consume event
     @test tc[] == 1
@@ -342,8 +342,8 @@ end
     close(async)
     @test !isopen(async)
     @test tc[] == 1
-    Base.process_events(false) # schedule event & then close
-    Sys.iswindows() && Base.process_events(false) # schedule event (windows?)
+    Base.process_events() # schedule event & then close
+    Sys.iswindows() && Base.process_events() # schedule event (windows?)
     yield() # consume event & then close
     @test tc[] == 2
     sleep(0.1) # no further events
@@ -357,8 +357,8 @@ end
     ccall(:uv_async_send, Cvoid, (Ptr{Cvoid},), async)
     close(async)
     @test !isopen(async)
-    Base.process_events(false) # schedule event & then close
-    Sys.iswindows() && Base.process_events(false) # schedule event (windows)
+    Base.process_events() # schedule event & then close
+    Sys.iswindows() && Base.process_events() # schedule event (windows)
     @test tc[] == 0
     yield() # consume event & then close
     @test tc[] == 1
