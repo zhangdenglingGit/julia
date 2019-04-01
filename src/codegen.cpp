@@ -6089,7 +6089,6 @@ static std::unique_ptr<Module> emit_function(
                     scope_stack.pop_back();
                     scope_list_stack.pop_back();
                     if (scope_list_stack.empty()) {
-                        // XXX: should we error here?
                         current_aliasscope = NULL;
                     } else {
                         current_aliasscope = scope_list_stack.back();
