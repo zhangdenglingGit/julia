@@ -120,8 +120,180 @@ julia> Dates.dayofweek(Date("2000-01-01"))
 """
 dayofweek(dt::TimeType) = dayofweek(days(dt))
 
-const Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday = 1, 2, 3, 4, 5, 6, 7
-const Mon, Tue, Wed, Thu, Fri, Sat, Sun = 1, 2, 3, 4, 5, 6, 7
+"""
+    Monday
+
+The first day of the week.
+
+# Examples
+```jldoctest
+julia> Monday
+1
+```
+"""
+const Monday = 1
+
+"""
+    Mon
+
+Abbreviation for [`Monday`](@ref).
+# Examples
+```jldoctest
+julia> Mon
+1
+```
+"""
+const Mon = 1
+
+"""
+    Tuesday
+
+The second day of the week.
+
+# Examples
+```jldoctest
+julia> Tuesday
+2
+```
+"""
+const Tuesday = 2
+
+"""
+    Tue
+
+Abbreviation for [`Tuesday`](@ref).
+# Examples
+```jldoctest
+julia> Tue
+2
+```
+"""
+const Tue = 2
+
+"""
+    Wednesday
+
+The third day of the week.
+
+# Examples
+```jldoctest
+julia> Wednesday
+3
+```
+"""
+const Wednesday = 3
+
+"""
+    Wed
+
+Abbreviation for [`Wednesday`](@ref).
+# Examples
+```jldoctest
+julia> Wed
+3
+```
+"""
+const Wed = 3
+
+"""
+    Thursday
+
+The fourth day of the week.
+
+# Examples
+```jldoctest
+julia> Thursday
+4
+```
+"""
+const Thursday = 4
+
+"""
+    Thu
+
+Abbreviation for [`Thursday`](@ref).
+# Examples
+```jldoctest
+julia> Thu
+4
+```
+"""
+const Thu = 4
+
+"""
+    Friday
+
+The fifth day of the week.
+
+# Examples
+```jldoctest
+julia> Friday
+5
+```
+"""
+const Friday = 5
+
+"""
+    Fri
+
+Abbreviation for [`Friday`](@ref).
+# Examples
+```jldoctest
+julia> Fri
+5
+```
+"""
+const Fri = 5
+
+"""
+    Saturday
+
+The sixth day of the week.
+
+# Examples
+```jldoctest
+julia> Saturday
+6
+```
+"""
+const Saturday = 6
+
+"""
+    Sat
+
+Abbreviation for [`Saturday`](@ref).
+# Examples
+```jldoctest
+julia> Sat
+6
+```
+"""
+const Sat = 6
+
+"""
+    Sunday
+
+The seventh day of the week.
+
+# Examples
+```jldoctest
+julia> Sunday
+7
+```
+"""
+const Sunday = 7
+
+"""
+    Sun
+
+Abbreviation for [`Sunday`](@ref).
+# Examples
+```jldoctest
+julia> Sun
+7
+```
+"""
+const Sun = 7
 
 dayname(day::Integer, locale::DateLocale) = locale.days_of_week[day]
 dayabbr(day::Integer, locale::DateLocale) = locale.days_of_week_abbr[day]
