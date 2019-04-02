@@ -47,6 +47,8 @@
 #include <llvm/CodeGen/TargetPassConfig.h>
 #include <llvm/MC/MCAsmInfo.h>
 #include <llvm/MC/MCStreamer.h>
+#include <llvm/MC/MCAsmBackend.h>
+#include <llvm/MC/MCCodeEmitter.h>
 
 #include <llvm/IR/LegacyPassManagers.h>
 #include <llvm/Transforms/Utils/Cloning.h>
@@ -891,11 +893,17 @@ jl_value_t *jl_dump_llvm_asm(void *F, const char* asm_variant, const char *debug
                 TM->getTargetTriple(), OutputAsmDialect, MAI, MII, MRI);
             MCAsmBackend *MAB = TM->getTarget().createMCAsmBackend(
                 STI, MRI, TM->Options.MCOptions);
-            auto FOut = llvm::make_unique<formatted_raw_ostream>(asmfile);
             MCCodeEmitter *MCE = nullptr;
+            auto FOut = llvm::make_unique<formatted_raw_ostream>(asmfile);
             std::unique_ptr<MCStreamer> S(TM->getTarget().createAsmStreamer(
                 *Context, std::move(FOut), true,
-                true, InstPrinter, MCE, MAB, false));
+                true, InstPrinter,
+#if JL_LLVM_VERSION >= 70000
+                std::unique_ptr<MCCodeEmitter>(MCE), std::unique_ptr<MCAsmBackend>(MAB),
+#else
+                MCE, MAB,
+#endif
+                false));
             AsmPrinter *Printer =
                 TM->getTarget().createAsmPrinter(*TM, std::move(S));
             if (Printer) {
