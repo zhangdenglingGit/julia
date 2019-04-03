@@ -71,12 +71,20 @@ function _threadsfor(iter,lbody)
             Base.invokelatest(threadsfor_fun, true)
         else
             in_threaded_loop[] = true
-            # the ccall is not expected to throw
-            ccall(:jl_threading_run, Cvoid, (Any,), threadsfor_fun)
+            threading_run(threadsfor_fun)
             in_threaded_loop[] = false
         end
         nothing
     end
+end
+
+function threading_run(func)
+    tasks = Vector{Task}(undef, nthreads())
+    for tid = 1:nthreads()
+        tasks[tid] = Base._run_on(Task(func), tid)
+    end
+    foreach(wait, tasks)
+    return nothing
 end
 
 """

@@ -968,6 +968,11 @@ JL_DLLEXPORT int16_t jl_get_task_tid(jl_task_t *t)
     return t->tid;
 }
 
+JL_DLLEXPORT void jl_set_task_tid(jl_task_t *t, int16_t tid)
+{
+    t->tid = tid;
+}
+
 
 #ifdef _OS_WINDOWS_
 #if defined(_CPU_X86_)

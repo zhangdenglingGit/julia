@@ -360,14 +360,14 @@ JL_DLLEXPORT void jl_wakeup_thread(int16_t tid)
 
     /* ensure thread tid is awake if necessary */
     if (sleep_threshold && sleep_check_state == sleeping
-            && ptls->tid != tid && !_threadedregion && tid != -1) {
+            && ptls->tid != tid && tid != -1) {
         uv_mutex_lock(&all_sleep_states[tid]->sleep_lock);
         if (all_sleep_states[tid]->sleep_state == sleeping)
             uv_cond_signal(&all_sleep_states[tid]->wake_signal);
         uv_mutex_unlock(&all_sleep_states[tid]->sleep_lock);
     }
 
-    if (_threadedregion && jl_uv_mutex.owner != jl_thread_self())
+    if (jl_uv_mutex.owner != jl_thread_self())
         jl_wake_libuv();
     else
         uv_stop(jl_global_event_loop());
@@ -390,11 +390,21 @@ static jl_task_t *get_next_task(jl_value_t *getsticky)
     return multiq_deletemin();
 }
 
+static inline uint64_t rdtscp(void)
+{
+    uint32_t lo, hi;
+    __asm__ volatile ("rdtscp"
+                      : /* outputs */ "=a" (lo), "=d" (hi)
+                      : /* no inputs */
+                      : /* clobbers */ "%rcx");
+    return ((uint64_t)hi << 32) + lo;
+}
 
 JL_DLLEXPORT jl_task_t *jl_task_get_next(jl_value_t *getsticky)
 {
-    jl_ptls_t ptls = jl_get_ptls_states();
+    //jl_ptls_t ptls = jl_get_ptls_states();
     jl_task_t *task;
+    uint64_t spin_start = 0;
 
     while (1) {
         jl_gc_safepoint();
@@ -402,51 +412,19 @@ JL_DLLEXPORT jl_task_t *jl_task_get_next(jl_value_t *getsticky)
         if (task)
             return task;
 
-        if (!_threadedregion) {
-            if (ptls->tid == 0) {
-                if (jl_run_once(jl_global_event_loop()) == 0) {
-                    task = get_next_task(getsticky);
-                    if (task)
-                        return task;
-#ifdef _OS_WINDOWS_
-                    Sleep(INFINITE);
-#else
-                    pause();
-#endif
-                }
+        if (jl_atomic_load(&jl_uv_n_waiters) == 0 && jl_mutex_trylock(&jl_uv_mutex)) {
+            task = get_next_task(getsticky);
+            if (task) {
+                JL_UV_UNLOCK();
+                return task;
             }
-            else {
-                int sleepnow = 0;
-                uv_mutex_lock(&sleep_lock);
-                if (!_threadedregion) {
-                    sleepnow = 1;
-                }
-                else {
-                    uv_mutex_unlock(&sleep_lock);
-                }
-                if (sleepnow) {
-                    int8_t gc_state = jl_gc_safe_enter(ptls);
-                    uv_cond_wait(&sleep_alarm, &sleep_lock);
-                    uv_mutex_unlock(&sleep_lock);
-                    jl_gc_safe_leave(ptls, gc_state);
-                }
-            }
+            uv_loop_t *loop = jl_global_event_loop();
+            loop->stop_flag = 0;
+            uv_run(loop, UV_RUN_ONCE);
+            JL_UV_UNLOCK();
         }
         else {
-            if (jl_atomic_load(&jl_uv_n_waiters) == 0 && jl_mutex_trylock(&jl_uv_mutex)) {
-                task = get_next_task(getsticky);
-                if (task) {
-                    JL_UV_UNLOCK();
-                    return task;
-                }
-                uv_loop_t *loop = jl_global_event_loop();
-                loop->stop_flag = 0;
-                uv_run(loop, UV_RUN_ONCE);
-                JL_UV_UNLOCK();
-            }
-            else {
-                jl_cpu_pause();
-            }
+            sleep_after_threshold(&spin_start);
         }
     }
 }

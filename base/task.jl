@@ -277,6 +277,39 @@ macro async(expr)
     end
 end
 
+macro par(where, expr)
+    thunk = esc(:(()->($expr)))
+    if where === :*
+        quote
+            local task = Task($thunk)
+            task.sticky = false
+            schedule(task)
+            task
+        end
+    else
+        quote
+            local task = Task($thunk)
+            _run_on(task, $(esc(where)))
+            task
+        end
+    end
+end
+
+function _set_tid(t::Task, tid)
+    if !(1 <= tid <= Threads.nthreads())
+        throw(ArgumentError("invalid thread id"))
+    end
+    ccall(:jl_set_task_tid, Cvoid, (Any, Int16), t, tid-1)
+    return nothing
+end
+
+function _run_on(t::Task, tid)
+    @assert !istaskstarted(t)
+    t.sticky = true
+    _set_tid(t, tid)
+    schedule(t)
+    return t
+end
 
 function register_taskdone_hook(t::Task, hook)
     tls = get_task_tls(t)
